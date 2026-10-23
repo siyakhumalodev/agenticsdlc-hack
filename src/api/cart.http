@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:3000
+@cartId = replace-with-cartId-from-create-response
+
+### Create
+POST {{baseUrl}}/api/carts
+
+### Read
+GET {{baseUrl}}/api/carts/{{cartId}}
+
+### Add (increments existing line)
+POST {{baseUrl}}/api/carts/{{cartId}}/items
+Content-Type: application/json
+
+{"productId": 1, "quantity": 2}
+
+### Replace quantity
+PUT {{baseUrl}}/api/carts/{{cartId}}/items/1
+Content-Type: application/json
+
+{"quantity": 3}
+
+### Remove
+DELETE {{baseUrl}}/api/carts/{{cartId}}/items/1
+
+### Validation error
+POST {{baseUrl}}/api/carts/{{cartId}}/items
+Content-Type: application/json
+
+{"productId": 1, "quantity": 0}

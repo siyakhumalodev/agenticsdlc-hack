@@ -10,18 +10,18 @@ export default function Navigation() {
 
   return (
     <nav
-      className={`${darkMode ? 'bg-dark/95' : 'bg-white/95'} backdrop-blur-sm fixed w-full z-50 shadow-md transition-colors duration-300`}
+      className={`${darkMode ? 'bg-dark/95' : 'bg-white/95'} backdrop-blur-sm fixed top-0 w-full z-50 shadow-md transition-colors duration-300`}
     >
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" className="flex items-center">
-              <img src="/copilot.png" alt="Copilot icon" className="h-8 w-auto" />
+              <img src="/copilot.png" alt="Copilot icon" className="h-6 sm:h-8 w-auto" />
               <div className="ml-2">
-                <span className={`text-xl font-bold ${darkMode ? 'text-light' : 'text-gray-800'}`}>
+                <span className={`text-sm sm:text-xl font-bold ${darkMode ? 'text-light' : 'text-gray-800'}`}>
                   OctoCAT Supply
                 </span>
-                <span className="block text-xs text-primary">Smart Cat Tech, Powered by AI</span>
+                <span className="hidden sm:block text-xs text-primary">Smart Cat Tech, Powered by AI</span>
               </div>
             </Link>
           </div>
@@ -84,7 +84,13 @@ export default function Navigation() {
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4">
+            <Link
+              to="/cart"
+              className={`${darkMode ? 'text-light' : 'text-gray-700'} px-2 sm:px-3 py-2 rounded-md text-sm font-medium hover:text-primary focus-visible:ring-2 focus-visible:ring-primary`}
+            >
+              Cart
+            </Link>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full focus:outline-none transition-colors"
@@ -117,7 +123,7 @@ export default function Navigation() {
             {isLoggedIn ? (
               <>
                 <span
-                  className={`${darkMode ? 'text-light' : 'text-gray-700'} text-sm transition-colors`}
+                  className={`${darkMode ? 'text-light' : 'text-gray-700'} hidden sm:inline text-sm transition-colors`}
                 >
                   {isAdmin && <span className="text-primary">(Admin) </span>}
                   Welcome!
@@ -132,7 +138,7 @@ export default function Navigation() {
             ) : (
               <Link
                 to="/login"
-                className="bg-primary hover:bg-accent text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="bg-primary hover:bg-accent text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Login
               </Link>

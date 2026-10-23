@@ -15,6 +15,11 @@ public class ApiException : Exception
 
 public sealed class NotFoundException : ApiException
 {
+    public NotFoundException(string message)
+        : base(message, "NOT_FOUND", StatusCodes.Status404NotFound)
+    {
+    }
+
     public NotFoundException(string entity, int id)
         : base($"{entity} with ID {id} not found", "NOT_FOUND", StatusCodes.Status404NotFound)
     {

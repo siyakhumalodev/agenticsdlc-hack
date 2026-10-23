@@ -3,6 +3,9 @@ import axios from 'axios';
 import { useQuery } from 'react-query';
 import { api } from '../../../api/config';
 import { useTheme } from '../../../context/ThemeContext';
+import { Link } from 'react-router-dom';
+import { cartErrorMessage } from '../../../api/cart';
+import { useCart } from '../../../api/useCart';
 
 interface Product {
   productId: number;
@@ -28,6 +31,8 @@ export default function Products() {
   const [showModal, setShowModal] = useState(false);
   const { data: products, isLoading, error } = useQuery('products', fetchProducts);
   const { darkMode } = useTheme();
+  const cart = useCart();
+  const [cartMessage, setCartMessage] = useState('');
 
   const filteredProducts = products?.filter(
     (product) =>
@@ -52,12 +57,13 @@ export default function Products() {
   const handleAddToCart = (productId: number) => {
     const quantity = quantities[productId] || 0;
     if (quantity > 0) {
-      // TODO: Implement cart functionality
-      alert(`Added ${quantity} items to cart`);
-      setQuantities((prev) => ({
-        ...prev,
-        [productId]: 0,
-      }));
+      setCartMessage('');
+      cart.mutation.mutate({ kind: 'add', productId, quantity }, {
+        onSuccess: () => {
+          setCartMessage(`Added ${quantity} items to your cart.`);
+          setQuantities((prev) => ({ ...prev, [productId]: 0 }));
+        },
+      });
     }
   };
 
@@ -103,6 +109,15 @@ export default function Products() {
           >
             Products
           </h1>
+          <p aria-live="polite" className="text-primary">{cartMessage}</p>
+          {cart.error && (
+            <div role="alert" className={darkMode ? 'text-red-300' : 'text-red-700'}>
+              <p>{cartErrorMessage(cart.error)}</p>
+              <Link to="/cart" className="underline focus-visible:ring-2 focus-visible:ring-primary">
+                View cart and retry
+              </Link>
+            </div>
+          )}
 
           <div className="relative">
             <input
@@ -213,6 +228,7 @@ export default function Products() {
                       >
                         <button
                           onClick={() => handleQuantityChange(product.productId, -1)}
+                          disabled={cart.busy}
                           className={`w-8 h-8 flex items-center justify-center ${darkMode ? 'text-light' : 'text-gray-700'} hover:text-primary transition-colors duration-300`}
                           aria-label={`Decrease quantity of ${product.name}`}
                           id={`decrease-qty-${product.productId}`}
@@ -228,6 +244,7 @@ export default function Products() {
                         </span>
                         <button
                           onClick={() => handleQuantityChange(product.productId, 1)}
+                          disabled={cart.busy || (quantities[product.productId] || 0) >= 2147483647}
                           className={`w-8 h-8 flex items-center justify-center ${darkMode ? 'text-light' : 'text-gray-700'} hover:text-primary transition-colors duration-300`}
                           aria-label={`Increase quantity of ${product.name}`}
                           id={`increase-qty-${product.productId}`}
@@ -241,7 +258,7 @@ export default function Products() {
                           ? 'bg-primary hover:bg-accent text-white'
                           : `${darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500'} cursor-not-allowed`
                           }`}
-                        disabled={!quantities[product.productId]}
+                        disabled={!quantities[product.productId] || cart.busy || cart.unavailable || !!cart.error}
                         aria-label={`Add ${quantities[product.productId] || 0} ${product.name} to cart`}
                         id={`add-to-cart-${product.productId}`}
                       >

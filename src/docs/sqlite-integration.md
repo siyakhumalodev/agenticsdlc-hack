@@ -25,6 +25,27 @@ The database consists of the following tables:
 - `deliveries` - Delivery tracking (linked to suppliers)
 - `order_detail_deliveries` - Junction table for order-delivery relationships
 - `migrations` - Database schema version tracking
+- `carts` - Guest cart identifiers (opaque bearer tokens)
+- `cart_items` - Positive integer product quantities, unique per cart/product
+
+### Guest cart persistence (.NET API)
+
+Migration `003_add_carts.sql` adds the cart tables without changing historical
+migrations. The .NET API in `src/api` uses the existing `DB_FILE` and connection
+factory. Transactions group cart validation, mutations, and returned snapshots.
+Foreign keys remove cart lines when their cart or product is deleted.
+
+Cart items store quantities, not client prices. Totals use current catalog prices
+and discounts with decimal arithmetic: round the discounted unit price to cents
+(midpoints away from zero), multiply by quantity, then sum. An empty cart totals
+zero. The browser retains only the opaque cart identifier, never the item list.
+API processes can restart without losing carts; deleting browser storage loses
+the local identifier, not the database rows.
+
+Repository and HTTP tests use temporary SQLite files because each repository
+operation opens a separate connection; unshared `:memory:` connections cannot
+preserve the schema across operations. See the
+[.NET API cart contract and test commands](../api/README.md#guest-shopping-carts).
 
 ## Getting Started
 
