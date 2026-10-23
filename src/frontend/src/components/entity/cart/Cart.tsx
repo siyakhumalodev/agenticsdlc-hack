@@ -77,6 +77,11 @@ export default function CartView() {
             <p aria-label="Cart total" className="text-3xl font-bold tabular-nums">{money(cart.cart?.total ?? 0)}</p>
           </div>
         )}
+        {!!cart.cart?.items.length && !cart.unavailable && (
+          <div className="flex justify-end">
+            <Link to="/checkout" className={`${buttonStyle} font-semibold`}>Proceed to checkout</Link>
+          </div>
+        )}
       </div>
     </div>
   );

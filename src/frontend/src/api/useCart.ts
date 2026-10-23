@@ -37,6 +37,7 @@ export function useCart() {
     (cart.error.response?.status === 404 || cart.error.response?.status === 400);
 
   return {
+    cartId: cartId ?? undefined,
     cart: cart.data,
     error: mutation.error ?? identity.error ?? cart.error,
     isLoading: identity.isLoading || (!!cartId && cart.isLoading),

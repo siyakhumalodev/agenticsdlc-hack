@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using OctoSupply.Api.Controllers;
 using OctoSupply.Api.Models;
+using OctoSupply.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,13 @@ builder.Services.AddScoped<OrderDetailsRepository>();
 builder.Services.AddScoped<OrdersRepository>();
 builder.Services.AddScoped<ProductsRepository>();
 builder.Services.AddScoped<CartsRepository>();
+builder.Services.AddScoped<CheckoutsRepository>();
+builder.Services.AddScoped<CheckoutService>();
+builder.Services.AddHttpClient<IPaymentProvider, StripePaymentProvider>(client =>
+{
+    client.BaseAddress = new Uri("https://api.stripe.com/v1/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+}).RemoveAllLoggers();
 builder.Services.AddScoped<SuppliersRepository>();
 
 builder.Services.AddCors(options =>

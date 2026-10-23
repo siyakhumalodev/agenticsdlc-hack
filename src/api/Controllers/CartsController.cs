@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OctoSupply.Api.Models;
 using OctoSupply.Api.Repositories;
+using OctoSupply.Api.Services;
 
 namespace OctoSupply.Api.Controllers;
 
@@ -10,7 +11,7 @@ namespace OctoSupply.Api.Controllers;
 [ProducesResponseType<CartErrorResponse>(StatusCodes.Status400BadRequest)]
 [ProducesResponseType<CartErrorResponse>(StatusCodes.Status404NotFound)]
 [ProducesResponseType<CartErrorResponse>(StatusCodes.Status409Conflict)]
-public sealed class CartsController(CartsRepository repository) : ControllerBase
+public sealed class CartsController(CartsRepository repository, CheckoutService checkout) : ControllerBase
 {
     /// <summary>Creates an empty cart; retain its identifier to access it again.</summary>
     [HttpPost]
@@ -49,4 +50,27 @@ public sealed class CartsController(CartsRepository repository) : ControllerBase
         await repository.RemoveAsync(cartId, productId, cancellationToken);
         return NoContent();
     }
+
+    /// <summary>Starts or resumes Stripe-hosted card payment using current server prices.</summary>
+    [HttpPost("{cartId}/checkout")]
+    [ProducesResponseType<CheckoutStatus>(StatusCodes.Status200OK)]
+    [ProducesResponseType<CartErrorResponse>(StatusCodes.Status502BadGateway)]
+    [ProducesResponseType<CartErrorResponse>(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<CheckoutStatus>> StartCheckout(
+        string cartId, StartCheckoutRequest request, CancellationToken cancellationToken) =>
+        Ok(await checkout.StartAsync(cartId, request.BranchId, cancellationToken));
+
+    /// <summary>Reconciles payment and returns the confirmed order with priced details when paid.</summary>
+    [HttpGet("{cartId}/checkout")]
+    [ProducesResponseType<CheckoutStatus>(StatusCodes.Status200OK)]
+    [ProducesResponseType<CartErrorResponse>(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<CheckoutStatus>> GetCheckout(string cartId, CancellationToken cancellationToken) =>
+        Ok(await checkout.GetAsync(cartId, false, cancellationToken));
+
+    /// <summary>Expires provider payment before unlocking the unchanged cart; paid sessions return their order.</summary>
+    [HttpPost("{cartId}/checkout/cancel")]
+    [ProducesResponseType<CheckoutStatus>(StatusCodes.Status200OK)]
+    [ProducesResponseType<CartErrorResponse>(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<CheckoutStatus>> CancelCheckout(string cartId, CancellationToken cancellationToken) =>
+        Ok(await checkout.GetAsync(cartId, true, cancellationToken));
 }

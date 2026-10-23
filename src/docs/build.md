@@ -2,6 +2,9 @@
 
 This guide provides instructions for building, running, and testing the OctoCAT Supply Chain Management application, which consists of an API component and a React Frontend.
 
+For the current C# cart checkout, see [Cart payments](payments.md) for active-backend
+commands, Stripe environment settings, webhook delivery and payment validation.
+
 ## Prerequisites
 
 - Node.js (version 18 or higher)

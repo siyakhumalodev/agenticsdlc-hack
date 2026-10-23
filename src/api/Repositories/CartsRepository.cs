@@ -107,16 +107,27 @@ public sealed class CartsRepository(SqliteConnectionFactory connectionFactory)
         }
     }
 
-    private async Task<Cart> ExecuteAsync(
-        string token,
-        Func<SqliteConnection, SqliteTransaction, long, Task>? mutation,
-        CancellationToken cancellationToken,
-        bool includeItems = true)
+    internal Task<Cart> WithSnapshotAsync(
+        string token, Func<SqliteConnection, SqliteTransaction, long, Cart, Task> action,
+        CancellationToken cancellationToken) =>
+        ExecuteAsync(token, (_, _, _) => Task.CompletedTask, cancellationToken, snapshotAction: action);
+
+    internal static void ValidateToken(string token)
     {
         if (token.Length != 64 || token.Any(character => !char.IsAsciiHexDigit(character)))
         {
             throw new ValidationException("Invalid cart identifier");
         }
+    }
+
+    private async Task<Cart> ExecuteAsync(
+        string token,
+        Func<SqliteConnection, SqliteTransaction, long, Task>? mutation,
+        CancellationToken cancellationToken,
+        bool includeItems = true,
+        Func<SqliteConnection, SqliteTransaction, long, Cart, Task>? snapshotAction = null)
+    {
+        ValidateToken(token);
 
         await using var connection = await connectionFactory.OpenConnectionAsync();
         // Immediate write transactions serialize read/modify/write operations across requests.
@@ -134,6 +145,17 @@ public sealed class CartsRepository(SqliteConnectionFactory connectionFactory)
         var cartId = Convert.ToInt64(result);
         if (mutation is not null)
         {
+            if (snapshotAction is null)
+            {
+                await using var active = connection.CreateCommand();
+                active.Transaction = transaction;
+                active.CommandText = "SELECT COUNT(*) FROM checkouts WHERE cart_id = $cartId AND state = 'active';";
+                active.Parameters.AddWithValue("$cartId", cartId);
+                if (Convert.ToInt32(await active.ExecuteScalarAsync(cancellationToken)) > 0)
+                {
+                    throw new ConflictException("Payment is in progress. Resume or cancel checkout before editing your cart.");
+                }
+            }
             await mutation(connection, transaction, cartId);
         }
 
@@ -176,7 +198,12 @@ public sealed class CartsRepository(SqliteConnectionFactory connectionFactory)
             }
         }
 
+        var cart = new Cart(token, items, total);
+        if (snapshotAction is not null)
+        {
+            await snapshotAction(connection, transaction, cartId, cart);
+        }
         await transaction.CommitAsync(cancellationToken);
-        return new Cart(token, items, total);
+        return cart;
     }
 }
